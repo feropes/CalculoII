@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from './api';
 import { motion } from 'framer-motion';
 import {
   AppBar,
@@ -68,7 +68,7 @@ function HomePage({ setPage }) {
   );
 }
 
-function DerivadasPage({ setPage }) {
+export function DerivadasPage({ setPage }) {
   const [funcao, setFuncao] = useState('');
   const [ponto, setPonto] = useState('');
   const [resultado, setResultado] = useState(null);
@@ -85,13 +85,14 @@ function DerivadasPage({ setPage }) {
       setSnackbar({ open: true, message: 'Erro: Use notação Python (x**2 em vez de x^2).', severity: 'error' });
       return;
     }
+
     setLoading(true);
     try {
-      const response = await axios.post('http://127.0.0.1:5000/api/derivada', {
+      const { data } = await api.post('/api/derivada', {
         funcao: funcao.trim(),
         ponto: ponto.trim()
       });
-      setResultado(response.data);
+      setResultado(data);
       setSnackbar({ open: true, message: 'Derivada calculada com sucesso!', severity: 'success' });
     } catch (error) {
       const msg = error.response?.data?.error || 'Erro ao calcular derivada.';
@@ -100,16 +101,14 @@ function DerivadasPage({ setPage }) {
     setLoading(false);
   };
 
-  const handleVoltar = () => {
-    setPage('home');
-    setResultado(null);
-  };
-
   return (
     <motion.div initial="initial" animate="in" exit="out"
                 variants={pageVariants} transition={pageTransition}>
       <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Typography variant="h4" gutterBottom>Calculadora de Derivadas</Typography>
+        <Typography variant="h4" gutterBottom>
+          Calculadora de Derivadas
+        </Typography>
+
         <form onSubmit={handleSubmit}>
           <TextField
             label="Função (ex: x**2 + 3*x + 1)"
@@ -117,7 +116,7 @@ function DerivadasPage({ setPage }) {
             fullWidth
             margin="normal"
             value={funcao}
-            onChange={(e) => setFuncao(e.target.value)}
+            onChange={e => setFuncao(e.target.value)}
           />
           <TextField
             label="Ponto (ex: 2)"
@@ -125,19 +124,17 @@ function DerivadasPage({ setPage }) {
             fullWidth
             margin="normal"
             value={ponto}
-            onChange={(e) => setPonto(e.target.value)}
+            onChange={e => setPonto(e.target.value)}
           />
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
             <Button type="submit" variant="contained" disabled={loading}>
-              {loading ? <CircularProgress size={24} /> : 'Calcular Derivada'}
+              {loading
+                ? <CircularProgress size={24} />
+                : 'Calcular Derivada'}
             </Button>
           </Box>
         </form>
-        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-          <Button variant="outlined" onClick={handleVoltar}>
-            Voltar ao Menu
-          </Button>
-        </Box>
+
         {resultado && (
           <Card sx={{ mt: 4 }}>
             <CardContent>
@@ -151,8 +148,8 @@ function DerivadasPage({ setPage }) {
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="subtitle1">Gráfico</Typography>
                   <img
-                    src={`http://127.0.0.1:5000${resultado.grafico_url}`}
-                    alt="Gráfico"
+                    src={`${process.env.REACT_APP_API_URL}${resultado.grafico_url}`}
+                    alt="Gráfico da derivada"
                     style={{ maxWidth: '100%' }}
                   />
                 </Box>
@@ -160,46 +157,48 @@ function DerivadasPage({ setPage }) {
             </CardContent>
           </Card>
         )}
+
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+          <Button variant="outlined" onClick={() => setPage('home')}>
+            ← Voltar ao Menu
+          </Button>
+        </Box>
+
         <Snackbar
           open={snackbar.open}
           autoHideDuration={4000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          onClose={() => setSnackbar(s => ({ ...s, open: false }))}
         >
-          <Alert
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            severity={snackbar.severity}
-            sx={{ width: '100%' }}
-          >
-            {snackbar.message}
-          </Alert>
+          <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
         </Snackbar>
       </Container>
     </motion.div>
   );
 }
 
-function IntegraisPage({ setPage }) {
+export function IntegraisPage({ setPage }) {
   const [funcao, setFuncao] = useState('');
-  const [limiteInferior, setLimiteInferior] = useState('');
-  const [limiteSuperior, setLimiteSuperior] = useState('');
+  const [limInf, setLimInf] = useState('');
+  const [limSup, setLimSup] = useState('');
   const [resultado, setResultado] = useState(null);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    if (!funcao || !limiteInferior || !limiteSuperior) {
+    if (!funcao || !limInf || !limSup) {
       setSnackbar({ open: true, message: 'Preencha todos os campos.', severity: 'error' });
       return;
     }
+
     setLoading(true);
     try {
-      const response = await axios.post('http://127.0.0.1:5000/api/integral', {
+      const { data } = await api.post('/api/integral', {
         funcao: funcao.trim(),
-        limiteInferior: limiteInferior.trim(),
-        limiteSuperior: limiteSuperior.trim()
+        limiteInferior: limInf.trim(),
+        limiteSuperior: limSup.trim()
       });
-      setResultado(response.data);
+      setResultado(data);
       setSnackbar({ open: true, message: 'Integral calculada com sucesso!', severity: 'success' });
     } catch (error) {
       const msg = error.response?.data?.error || 'Erro ao calcular integral.';
@@ -208,16 +207,14 @@ function IntegraisPage({ setPage }) {
     setLoading(false);
   };
 
-  const handleVoltar = () => {
-    setPage('home');
-    setResultado(null);
-  };
-
   return (
     <motion.div initial="initial" animate="in" exit="out"
                 variants={pageVariants} transition={pageTransition}>
       <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Typography variant="h4" gutterBottom>Calculadora de Integrais</Typography>
+        <Typography variant="h4" gutterBottom>
+          Calculadora de Integrais
+        </Typography>
+
         <form onSubmit={handleSubmit}>
           <TextField
             label="Função (ex: x**2)"
@@ -225,65 +222,51 @@ function IntegraisPage({ setPage }) {
             fullWidth
             margin="normal"
             value={funcao}
-            onChange={(e) => setFuncao(e.target.value)}
+            onChange={e => setFuncao(e.target.value)}
           />
           <TextField
             label="Limite Inferior (ex: 0)"
             variant="outlined"
             fullWidth
             margin="normal"
-            value={limiteInferior}
-            onChange={(e) => setLimiteInferior(e.target.value)}
+            value={limInf}
+            onChange={e => setLimInf(e.target.value)}
           />
           <TextField
             label="Limite Superior (ex: 5)"
             variant="outlined"
             fullWidth
             margin="normal"
-            value={limiteSuperior}
-            onChange={(e) => setLimiteSuperior(e.target.value)}
+            value={limSup}
+            onChange={e => setLimSup(e.target.value)}
           />
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
             <Button type="submit" variant="contained" disabled={loading}>
-              {loading ? <CircularProgress size={24} /> : 'Calcular Integral'}
+              {loading
+                ? <CircularProgress size={24} />
+                : 'Calcular Integral'}
             </Button>
           </Box>
         </form>
-        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-          <Button variant="outlined" onClick={handleVoltar}>
-            Voltar ao Menu
-          </Button>
-        </Box>
 
         {resultado && (
           <Card sx={{ mt: 4 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>Resultado</Typography>
-
               <Typography>
-                <strong>Integral definida:</strong> {' '}
+                <strong>Integral definida:</strong>{' '}
                 ∫<sup>{resultado.limite_superior}</sup>
                 <sub>{resultado.limite_inferior}</sub> {resultado.funcao} dx
               </Typography>
-
-              <Typography>
-                <strong>Primitiva (antiderivada):</strong> {resultado.primitiva}
-              </Typography>
-
-              <Typography>
-                <strong>Valor exato da integral:</strong> {resultado.area_exact}
-              </Typography>
-
-              <Typography>
-                <strong>Valor aproximado:</strong> {resultado.area_approx.toFixed(7)}
-              </Typography>
-
+              <Typography><strong>Primitiva:</strong> {resultado.primitiva}</Typography>
+              <Typography><strong>Valor exato:</strong> {resultado.area_exact}</Typography>
+              <Typography><strong>Valor aproximado:</strong> {resultado.area_approx.toFixed(7)}</Typography>
               {resultado.grafico_url && (
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="subtitle1">Gráfico</Typography>
                   <img
-                    src={`http://127.0.0.1:5000${resultado.grafico_url}`}
-                    alt="Gráfico"
+                    src={`${process.env.REACT_APP_API_URL}${resultado.grafico_url}`}
+                    alt="Gráfico da integral"
                     style={{ maxWidth: '100%' }}
                   />
                 </Box>
@@ -292,18 +275,18 @@ function IntegraisPage({ setPage }) {
           </Card>
         )}
 
+        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+          <Button variant="outlined" onClick={() => setPage('home')}>
+            ← Voltar ao Menu
+          </Button>
+        </Box>
+
         <Snackbar
           open={snackbar.open}
           autoHideDuration={4000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          onClose={() => setSnackbar(s => ({ ...s, open: false }))}
         >
-          <Alert
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            severity={snackbar.severity}
-            sx={{ width: '100%' }}
-          >
-            {snackbar.message}
-          </Alert>
+          <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
         </Snackbar>
       </Container>
     </motion.div>
